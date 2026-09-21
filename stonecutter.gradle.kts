@@ -1,21 +1,14 @@
 plugins {
     id("dev.kikugie.stonecutter")
-    id("dev.architectury.loom") version "1.9-SNAPSHOT" apply false
-    id("architectury-plugin") version "3.4-SNAPSHOT" apply false
+    id("dev.architectury.loom") version "1.9.436" apply false
+    id("architectury-plugin") version "3.4.164" apply false
     id("com.github.johnrengelman.shadow") version "8.1.1" apply false
-    id("com.modrinth.minotaur") version "2.9.0" apply false
-    id("net.darkhax.curseforgegradle") version "1.1.18" apply false
 }
 stonecutter active "1.20.1" /* [SC] DO NOT EDIT */
 
 stonecutter registerChiseled tasks.register("chiseledBuild", stonecutter.chiseled) {
     group = "project"
     ofTask("buildAndCollect")
-}
-
-stonecutter registerChiseled tasks.register("chiseledPublish", stonecutter.chiseled) {
-    group = "project"
-    ofTask("publishMod")
 }
 
 for (it in stonecutter.tree.branches) {
@@ -25,11 +18,6 @@ for (it in stonecutter.tree.branches) {
         group = "project"
         versions { branch, _ -> branch == it.id }
         ofTask("buildAndCollect")
-    }
-    stonecutter registerChiseled tasks.register("chiseledPublish$loader", stonecutter.chiseled) {
-        group = "project"
-        versions { branch, _ -> branch == it.id }
-        ofTask("publishMod")
     }
 }
 

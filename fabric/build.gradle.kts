@@ -4,8 +4,6 @@ plugins {
     id("dev.architectury.loom")
     id("architectury-plugin")
     id("com.github.johnrengelman.shadow")
-    id("com.modrinth.minotaur")
-    id("net.darkhax.curseforgegradle")
 }
 
 val loader = prop("loom.platform")!!
@@ -115,54 +113,4 @@ tasks.register<Copy>("buildAndCollect") {
     from(tasks.remapJar.get().archiveFile, tasks.remapSourcesJar.get().archiveFile)
     into(rootProject.layout.buildDirectory.file("libs/${mod.version}/$loader"))
     dependsOn("build")
-}
-
-modrinth {
-    token.set(providers.environmentVariable("MODRINTH_TOKEN"))
-    projectId.set(providers.gradleProperty("publish.modrinth_id"))
-    versionNumber.set("${mod.version}+$minecraft-$loader")
-    versionName.set("${mod.name} ${mod.version} ($loader $minecraft)")
-    versionType.set("release")
-    uploadFile.set(tasks.named("remapJar"))
-    gameVersions.add(minecraft)
-    loaders.add(loader)
-    detectLoaders.set(false)
-    val changelogFile = rootProject.file("CHANGELOG.md")
-    if (changelogFile.exists()) changelog.set(changelogFile.readText())
-}
-
-tasks.named("modrinth") {
-    onlyIf {
-        providers.environmentVariable("MODRINTH_TOKEN").isPresent &&
-            providers.gradleProperty("publish.modrinth_id").orNull?.isNotBlank() == true
-    }
-}
-
-tasks.register<net.darkhax.curseforgegradle.TaskPublishCurseForge>("publishCurseForge") {
-    group = "publishing"
-    apiToken = providers.environmentVariable("CURSEFORGE_TOKEN").orNull
-    val curseId = providers.gradleProperty("publish.curseforge_id").orNull?.takeIf { it.toLongOrNull() != null }
-    onlyIf { apiToken != null && curseId != null }
-    if (curseId != null) {
-        val mainFile = upload(curseId, tasks.named("remapJar"))
-        mainFile.releaseType = "release"
-        mainFile.changelogType = "markdown"
-        val changelogFile = rootProject.file("CHANGELOG.md")
-        mainFile.changelog = if (changelogFile.exists()) changelogFile.readText() else "No changelog provided."
-        mainFile.addGameVersion(minecraft)
-        mainFile.addModLoader(when (loader) {
-            "fabric" -> "Fabric"
-            "forge" -> "Forge"
-            "neoforge" -> "NeoForge"
-            else -> loader.replaceFirstChar { it.uppercase() }
-        })
-        mainFile.addJavaVersion(if (stonecutter.eval(minecraft, ">=1.20.5")) "Java 21" else "Java 17")
-        mainFile.addGameVersion("Client", "Server")
-    }
-}
-
-tasks.register("publishMod") {
-    group = "publishing"
-    description = "Publish this loader/version to Modrinth + CurseForge."
-    dependsOn("modrinth", "publishCurseForge")
 }
