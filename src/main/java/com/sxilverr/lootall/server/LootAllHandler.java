@@ -1,15 +1,13 @@
 package com.sxilverr.lootall.server;
-import com.sxilverr.lootall.core.LootFilter;
 
 import com.sxilverr.lootall.Compat;
 import com.sxilverr.lootall.Text;
 import com.sxilverr.lootall.config.LootConfig;
-
-import com.sxilverr.lootall.compat.LootrCompat;
-import com.sxilverr.lootall.network.LootAllNetwork;
-import com.sxilverr.lootall.network.LootFeedbackPacket;
+import com.sxilverr.lootall.core.LootFilter;
+import com.sxilverr.lootall.platform.LootPlatform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -22,22 +20,29 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.items.ItemHandlerHelper;
-//? if >=1.17 {
-import net.minecraftforge.network.PacketDistributor;
-//?} else {
-/*import net.minecraftforge.fml.network.PacketDistributor;*/
-//?}
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class LootAllHandler {
-    private static final boolean LOOTR = ModList.get().isLoaded("lootr");
-
+public final class LootAllHandler {
     private static TransferService.ResolvedSink activeSink;
     private static int transferredCount;
+    private static int ticks;
+
+    private LootAllHandler() {
+    }
+
+    public static void tick(MinecraftServer server) {
+        if (!LootConfig.autoLooting || ++ticks < LootConfig.autoLootingTimer * 20) {
+            return;
+        }
+        ticks = 0;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!player.isSpectator() && LootPlatform.INSTANCE.canAutoLoot(player)) {
+                lootAll(player, true);
+            }
+        }
+    }
 
     public static void lootAll(ServerPlayer player) {
         lootAll(player, false);
@@ -68,6 +73,7 @@ public class LootAllHandler {
     }
 
     private static void lootBlocks(ServerPlayer player, ServerLevel level, int range, double rangeSq, Result result) {
+        LootPlatform platform = LootPlatform.INSTANCE;
         BlockPos center = player.blockPosition();
         int minChunkX = (center.getX() - range) >> 4;
         int maxChunkX = (center.getX() + range) >> 4;
@@ -93,14 +99,10 @@ public class LootAllHandler {
             if (LootConfig.excludeBlockedContainers && isBlockedChest(level, be.getBlockPos())) {
                 continue;
             }
-            if (LOOTR && LootrCompat.isLootrContainer(be)) {
-                int looted = LootrCompat.lootContainer(player, be);
-                if (looted >= 0) {
-                    result.items += looted;
-                    result.containers++;
-                }
+            if (platform.isLootr(be)) {
+                countLootr(result, platform.lootLootr(player, be));
             } else if (be instanceof RandomizableContainerBlockEntity
-                    && ((RandomizableContainerBlockEntity) be).lootTable != null) {
+                    && platform.hasLootTable((RandomizableContainerBlockEntity) be)) {
                 RandomizableContainerBlockEntity rc = (RandomizableContainerBlockEntity) be;
                 rc.unpackLootTable(player);
                 result.items += drain(player, rc);
@@ -111,33 +113,32 @@ public class LootAllHandler {
     }
 
     private static void lootMinecarts(ServerPlayer player, ServerLevel level, int range, double rangeSq, Result result) {
+        LootPlatform platform = LootPlatform.INSTANCE;
         AABB box = player.getBoundingBox().inflate(range);
         List<AbstractMinecartContainer> carts = level.getEntitiesOfClass(AbstractMinecartContainer.class, box);
         for (AbstractMinecartContainer cart : carts) {
             if (player.distanceToSqr(cart) > rangeSq) {
                 continue;
             }
-            if (LOOTR && LootrCompat.isLootrCart(cart)) {
-                int looted = LootrCompat.lootCart(player, cart);
-                if (looted >= 0) {
-                    result.items += looted;
-                    result.containers++;
-                }
-            //? if >=1.19 {
-            } else if (cart.getLootTable() != null) {
+            if (platform.isLootr(cart)) {
+                countLootr(result, platform.lootLootr(player, cart));
+            } else if (platform.hasLootTable(cart)) {
+                //? if >=1.19 {
                 cart.unpackChestVehicleLootTable(player);
+                //?} else {
+                /*cart.unpackLootTable(player);*/
+                //?}
                 result.items += drain(player, cart);
                 cart.setChanged();
                 result.containers++;
             }
-            //?} else {
-            /*} else if (cart.lootTable != null) {
-                cart.unpackLootTable(player);
-                result.items += drain(player, cart);
-                cart.setChanged();
-                result.containers++;
-            }*/
-            //?}
+        }
+    }
+
+    private static void countLootr(Result result, int looted) {
+        if (looted >= 0) {
+            result.items += looted;
+            result.containers++;
         }
     }
 
@@ -163,10 +164,10 @@ public class LootAllHandler {
             ItemStack remaining = activeSink.sink().insert(stack);
             transferredCount += before - remaining.getCount();
             if (!remaining.isEmpty()) {
-                ItemHandlerHelper.giveItemToPlayer(player, remaining);
+                LootPlatform.INSTANCE.giveItem(player, remaining);
             }
         } else {
-            ItemHandlerHelper.giveItemToPlayer(player, stack);
+            LootPlatform.INSTANCE.giveItem(player, stack);
         }
     }
 
@@ -188,8 +189,7 @@ public class LootAllHandler {
                 message = Text.translatable("message.lootall.looted",
                         result.items, itemWord, result.containers, containerWord);
             }
-            LootAllNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new LootFeedbackPacket(message, transferName));
+            LootPlatform.INSTANCE.sendFeedback(player, message, transferName);
         }
         if (LootConfig.playSound && result.containers > 0) {
             player.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1.0F, 1.0F);

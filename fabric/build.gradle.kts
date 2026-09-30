@@ -3,7 +3,7 @@
 plugins {
     id("dev.architectury.loom")
     id("architectury-plugin")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 val loader = prop("loom.platform")!!
@@ -12,9 +12,9 @@ val common: Project = requireNotNull(stonecutter.node.sibling("")?.project) {
     "No common project for $project"
 }
 
-version = "$minecraft-${mod.version}-$loader"
+version = "${mod.version}-$minecraft"
 base {
-    archivesName.set(mod.id)
+    archivesName.set("${mod.id}-$loader")
 }
 architectury {
     platformSetupLoomIde()

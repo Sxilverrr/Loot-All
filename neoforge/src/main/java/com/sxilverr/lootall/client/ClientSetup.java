@@ -15,6 +15,6 @@ public class ClientSetup {
     public static void registerLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(Config.MOD_ID, "loot_transfer_feedback"),
-                TransferFeedback.OVERLAY);
+                (graphics, deltaTracker) -> TransferFeedback.render(graphics, graphics.guiWidth(), graphics.guiHeight()));
     }
 }

@@ -116,24 +116,18 @@ public class TransferData extends SavedData {
     //? if >=1.18 {
     public static TransferData load(CompoundTag tag/*? if >=1.21.1 {*//*, HolderLookup.Provider registries*//*?}*/) {
         TransferData data = new TransferData();
-        ListTag list = tag.getList("targets", 10);
-        for (int i = 0; i < list.size(); i++) {
-            CompoundTag entry = list.getCompound(i);
-            UUID player = entry.getUUID("player");
-            if ("item".equals(entry.getString("type"))) {
-                data.targets.put(player, new ItemTarget(rl(entry.getString("item"))));
-            } else {
-                ResourceKey<Level> dimension = dimKey(entry.getString("dimension"));
-                BlockPos pos = new BlockPos(entry.getInt("x"), entry.getInt("y"), entry.getInt("z"));
-                data.targets.put(player, new BlockTarget(dimension, pos));
-            }
-        }
+        data.read(tag);
         return data;
     }
     //?} else {
     /*@Override
     public void load(CompoundTag tag) {
         targets.clear();
+        read(tag);
+    }
+    *///?}
+
+    private void read(CompoundTag tag) {
         ListTag list = tag.getList("targets", 10);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag entry = list.getCompound(i);
@@ -147,7 +141,6 @@ public class TransferData extends SavedData {
             }
         }
     }
-    *///?}
 
     @Override
     public CompoundTag save(CompoundTag tag/*? if >=1.21.1 {*//*, HolderLookup.Provider registries*//*?}*/) {

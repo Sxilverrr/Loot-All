@@ -5,6 +5,7 @@ import com.sxilverr.lootall.client.KeyBindings;
 import com.sxilverr.lootall.client.TransferFeedback;
 import com.sxilverr.lootall.network.LootAllNetworkClient;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 public final class LootAllFabricClient implements ClientModInitializer {
 
@@ -13,6 +14,7 @@ public final class LootAllFabricClient implements ClientModInitializer {
         KeyBindings.register();
         LootAllNetworkClient.registerClient();
         ClientEvents.register();
-        TransferFeedback.register();
+        HudRenderCallback.EVENT.register((graphics, tick) ->
+                TransferFeedback.render(graphics, graphics.guiWidth(), graphics.guiHeight()));
     }
 }

@@ -1,17 +1,9 @@
 package com.sxilverr.lootall.network;
 
-import com.sxilverr.lootall.Text;
-import com.sxilverr.lootall.server.StageGate;
-import com.sxilverr.lootall.core.TransferData;
 import com.sxilverr.lootall.server.TransferService;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 //? if >=1.17 {
 import net.minecraftforge.network.NetworkEvent;
 //?} else {
@@ -39,25 +31,9 @@ public class SetItemTargetPacket {
         NetworkEvent.Context context = ctx.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player == null) {
-                return;
+            if (player != null) {
+                TransferService.setItemTarget(player, msg.item);
             }
-            MinecraftServer server = player.getServer();
-            if (server == null) {
-                return;
-            }
-            if (!StageGate.canTransfer(player)) {
-                player.displayClientMessage(Text.translatable("message.lootall.no_stage"), true);
-                return;
-            }
-            Item item = ForgeRegistries.ITEMS.getValue(msg.item);
-            if (!TransferService.canTargetItem(player, item)) {
-                player.displayClientMessage(Text.translatable("message.lootall.item_target_invalid"), true);
-                return;
-            }
-            TransferData.get(server).setItemTarget(player.getUUID(), msg.item);
-            Component name = new ItemStack(item).getHoverName();
-            player.displayClientMessage(Text.translatable("message.lootall.target_set_item", name), true);
         });
         context.setPacketHandled(true);
     }

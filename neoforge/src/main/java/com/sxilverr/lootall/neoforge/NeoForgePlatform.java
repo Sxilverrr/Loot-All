@@ -1,35 +1,42 @@
-package com.sxilverr.lootall.server;
-import com.sxilverr.lootall.core.TransferData;
+package com.sxilverr.lootall.neoforge;
 
-import com.sxilverr.lootall.config.LootConfig;
-
+import com.sxilverr.lootall.Compat;
+import com.sxilverr.lootall.Text;
 import com.sxilverr.lootall.compat.AppliedEnergisticsCompat;
 import com.sxilverr.lootall.compat.CuriosCompat;
+import com.sxilverr.lootall.compat.LootrCompat;
 import com.sxilverr.lootall.compat.MekanismCompat;
 import com.sxilverr.lootall.compat.PrettyPipesCompat;
 import com.sxilverr.lootall.compat.ProjectECompat;
 import com.sxilverr.lootall.compat.RefinedStorageCompat;
 import com.sxilverr.lootall.compat.SimpleStorageNetworkCompat;
 import com.sxilverr.lootall.compat.TomsStorageCompat;
+import com.sxilverr.lootall.network.LootFeedbackPacket;
+import com.sxilverr.lootall.platform.LootPlatform;
+import com.sxilverr.lootall.server.TransferService.LootSink;
+import com.sxilverr.lootall.server.TransferService.ResolvedSink;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.vehicle.AbstractMinecartContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.network.PacketDistributor;
 
-public class TransferService {
+import java.util.Optional;
+
+public final class NeoForgePlatform extends LootPlatform {
+    private static final boolean LOOTR = ModList.get().isLoaded("lootr");
     private static final boolean RS = ModList.get().isLoaded("refinedstorage");
     private static final boolean PE = ModList.get().isLoaded("projecte");
     private static final boolean AE2 = ModList.get().isLoaded("ae2");
@@ -38,107 +45,99 @@ public class TransferService {
     private static final boolean SSN = ModList.get().isLoaded("storagenetwork");
     private static final boolean PIPES = ModList.get().isLoaded("prettypipes");
 
-    public interface LootSink {
-        ItemStack insert(ItemStack stack);
+    @Override
+    public boolean hasLootTable(RandomizableContainerBlockEntity be) {
+        return be.getLootTable() != null;
     }
 
-    public record ResolvedSink(LootSink sink, Component name, Runnable onComplete) {
-        public ResolvedSink(LootSink sink, Component name) {
-            this(sink, name, null);
-        }
+    @Override
+    public boolean isLootr(BlockEntity be) {
+        return LOOTR && LootrCompat.isLootrContainer(be);
     }
 
-    public static ResolvedSink resolveSink(ServerPlayer player) {
-        if (!LootConfig.enableLootingTransfer) {
-            return null;
-        }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return null;
-        }
-        TransferData.Target target = TransferData.get(server).getTarget(player.getUUID());
-        if (target instanceof TransferData.ItemTarget itemTarget) {
-            return resolveItemSink(player, BuiltInRegistries.ITEM.get(itemTarget.item()));
-        }
-        if (!(target instanceof TransferData.BlockTarget block)) {
-            return null;
-        }
-        ServerLevel targetLevel = server.getLevel(block.dimension());
-        if (targetLevel == null) {
-            return null;
-        }
-        boolean sameDimension = targetLevel.dimension() == player.level().dimension();
-        if (LootConfig.transferRequireSameDimension && !sameDimension) {
-            return null;
-        }
-        BlockPos pos = block.pos();
-        if (sameDimension && LootConfig.maxLootTransferDistance > 0) {
-            double maxSq = (double) LootConfig.maxLootTransferDistance * LootConfig.maxLootTransferDistance;
-            if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > maxSq) {
-                return null;
-            }
-        }
+    @Override
+    public boolean isLootr(AbstractMinecartContainer cart) {
+        return LOOTR && LootrCompat.isLootrCart(cart);
+    }
+
+    @Override
+    public int lootLootr(ServerPlayer player, BlockEntity be) {
+        return LootrCompat.lootContainer(player, be);
+    }
+
+    @Override
+    public int lootLootr(ServerPlayer player, AbstractMinecartContainer cart) {
+        return LootrCompat.lootCart(player, cart);
+    }
+
+    @Override
+    public void giveItem(ServerPlayer player, ItemStack stack) {
+        ItemHandlerHelper.giveItemToPlayer(player, stack);
+    }
+
+    @Override
+    public void sendFeedback(ServerPlayer player, Component message, Component transfer) {
+        PacketDistributor.sendToPlayer(player, new LootFeedbackPacket(message, Optional.ofNullable(transfer)));
+    }
+
+    @Override
+    public ResolvedSink blockSink(ServerPlayer player, ServerLevel level, BlockPos pos, boolean chunkReady) {
         if (RS) {
-            LootSink rsSink = RefinedStorageCompat.blockSink(targetLevel, pos);
+            LootSink rsSink = RefinedStorageCompat.blockSink(level, pos);
             if (rsSink != null) {
-                return new ResolvedSink(rsSink, targetLevel.getBlockState(pos).getBlock().getName());
+                return new ResolvedSink(rsSink, level.getBlockState(pos).getBlock().getName());
             }
         }
-        ChunkPos chunkPos = new ChunkPos(pos);
-        if (LootConfig.transferRequireLoadedChunk
-                && targetLevel.getChunkSource().getChunkNow(chunkPos.x, chunkPos.z) == null) {
+        if (!chunkReady) {
             return null;
         }
-        if (PE && ProjectECompat.isTransmutationTable(targetLevel.getBlockState(pos))) {
+        Component blockName = level.getBlockState(pos).getBlock().getName();
+        if (PE && ProjectECompat.isTransmutationTable(level.getBlockState(pos))) {
             LootSink emcSink = ProjectECompat.personalEmcSink(player);
             if (emcSink != null) {
-                return new ResolvedSink(emcSink, targetLevel.getBlockState(pos).getBlock().getName(),
-                        () -> ProjectECompat.syncPersonal(player));
+                return new ResolvedSink(emcSink, blockName, () -> ProjectECompat.syncPersonal(player));
             }
         }
         if (AE2) {
-            LootSink ae2Sink = AppliedEnergisticsCompat.blockSink(targetLevel, pos, player);
+            LootSink ae2Sink = AppliedEnergisticsCompat.blockSink(level, pos, player);
             if (ae2Sink != null) {
-                return new ResolvedSink(ae2Sink, Component.translatable("name.lootall.me_network"));
+                return new ResolvedSink(ae2Sink, Text.translatable("name.lootall.me_network"));
             }
         }
         if (MEK) {
-            LootSink mekSink = MekanismCompat.blockSink(targetLevel, pos);
+            LootSink mekSink = MekanismCompat.blockSink(level, pos);
             if (mekSink != null) {
-                return new ResolvedSink(mekSink, targetLevel.getBlockState(pos).getBlock().getName());
+                return new ResolvedSink(mekSink, blockName);
             }
         }
         if (TOMS) {
-            LootSink tomsSink = TomsStorageCompat.blockSink(targetLevel, pos);
+            LootSink tomsSink = TomsStorageCompat.blockSink(level, pos);
             if (tomsSink != null) {
-                return new ResolvedSink(tomsSink, targetLevel.getBlockState(pos).getBlock().getName());
+                return new ResolvedSink(tomsSink, blockName);
             }
         }
         if (SSN) {
-            LootSink ssnSink = SimpleStorageNetworkCompat.blockSink(targetLevel, pos);
+            LootSink ssnSink = SimpleStorageNetworkCompat.blockSink(level, pos);
             if (ssnSink != null) {
-                return new ResolvedSink(ssnSink, targetLevel.getBlockState(pos).getBlock().getName());
+                return new ResolvedSink(ssnSink, blockName);
             }
         }
         if (PIPES) {
-            LootSink pipesSink = PrettyPipesCompat.blockSink(targetLevel, pos);
+            LootSink pipesSink = PrettyPipesCompat.blockSink(level, pos);
             if (pipesSink != null) {
-                return new ResolvedSink(pipesSink, targetLevel.getBlockState(pos).getBlock().getName());
+                return new ResolvedSink(pipesSink, blockName);
             }
         }
-        BlockEntity be = targetLevel.getBlockEntity(pos);
-        if (be == null) {
-            return null;
-        }
-        IItemHandler handler = findHandler(be);
+        BlockEntity be = level.getBlockEntity(pos);
+        IItemHandler handler = be == null ? null : findHandler(be);
         if (handler == null) {
             return null;
         }
-        return new ResolvedSink(stack -> ItemHandlerHelper.insertItemStacked(handler, stack, false),
-                targetLevel.getBlockState(pos).getBlock().getName());
+        return new ResolvedSink(stack -> ItemHandlerHelper.insertItemStacked(handler, stack, false), blockName);
     }
 
-    private static ResolvedSink resolveItemSink(ServerPlayer player, Item item) {
+    @Override
+    public ResolvedSink itemSink(ServerPlayer player, Item item) {
         if (RS) {
             ItemStack networkStack = findPlayerStack(player, item);
             if (networkStack != null && RefinedStorageCompat.isNetworkItem(networkStack)) {
@@ -181,15 +180,8 @@ public class TransferService {
                 new ItemStack(item).getHoverName());
     }
 
-    public static IItemHandler resolveItemHandler(ServerPlayer player, Item item) {
-        IItemHandler handler = inventoryItemHandler(player, item);
-        if (handler == null) {
-            handler = CuriosCompat.findItemHandler(player, item);
-        }
-        return handler;
-    }
-
-    public static boolean canTargetBlock(ServerLevel level, BlockPos pos) {
+    @Override
+    public boolean canTargetBlock(ServerLevel level, BlockPos pos) {
         if (RS && RefinedStorageCompat.blockSink(level, pos) != null) {
             return true;
         }
@@ -215,7 +207,8 @@ public class TransferService {
         return be != null && findHandler(be) != null;
     }
 
-    public static boolean canTargetItem(ServerPlayer player, Item item) {
+    @Override
+    public boolean canTargetItem(ServerPlayer player, Item item) {
         if (RS) {
             ItemStack stack = findPlayerStack(player, item);
             if (stack != null && RefinedStorageCompat.isNetworkItem(stack)) {
@@ -240,8 +233,16 @@ public class TransferService {
         return resolveItemHandler(player, item) != null;
     }
 
+    private static IItemHandler resolveItemHandler(ServerPlayer player, Item item) {
+        IItemHandler handler = inventoryItemHandler(player, item);
+        if (handler == null) {
+            handler = CuriosCompat.findItemHandler(player, item);
+        }
+        return handler;
+    }
+
     private static ItemStack findPlayerStack(ServerPlayer player, Item item) {
-        Inventory inventory = player.getInventory();
+        Inventory inventory = Compat.inventory(player);
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty() && stack.getItem() == item) {
@@ -252,7 +253,7 @@ public class TransferService {
     }
 
     private static IItemHandler inventoryItemHandler(ServerPlayer player, Item item) {
-        Inventory inventory = player.getInventory();
+        Inventory inventory = Compat.inventory(player);
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty() && stack.getItem() == item) {
@@ -265,7 +266,7 @@ public class TransferService {
         return null;
     }
 
-    public static IItemHandler findHandler(BlockEntity be) {
+    private static IItemHandler findHandler(BlockEntity be) {
         Level level = be.getLevel();
         if (level == null) {
             return null;

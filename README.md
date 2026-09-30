@@ -2,29 +2,25 @@
 
 <img width="768" height="456" alt="Loot All Banner" src="https://github.com/user-attachments/assets/75fb9464-ed5a-4dd9-8ec0-dffa9be2454f" />
 
+Press `-` and every loot container around you is emptied into your inventory, or into your storage system if you've set a transfer target.
 
-
-Loot All allows you to loot all nearby containers around you with a single button.
-
-By pressing the keybind (default `-`) all nearby loot containers are instantly emptied into your inventory or storage system.
-
-* Loot chests, barrels, and any other loot-table containers in a configurable radius.
-* Fully Lootr compatible.
-* Auto-loot mode that clears nearby containers on a timer, hands-free.
-* Text on screen shows how many items were collected and how many containers were looted.
+* Loots chests, barrels and any other container with a loot table, within a radius you set.
+* Works with Lootr (Forge and NeoForge).
+* Auto-loot mode empties nearby containers on a timer.
+* On-screen text shows how many items you got and from how many containers.
 
 ## Loot Transfer
 
-Look at any storage block or item in your inventory and press `=` to set it as your transfer target. From then on, everything you loot is routed directly into that storage, across any distance and even dimensions.
+Look at a storage block, or hover an item in your inventory, and press `=` to make it your transfer target. Everything you loot after that goes straight into it, from any distance and even from another dimension (both configurable).
 
-* Bind a block or an item — a chest, drawer, ME terminal, backpack, wireless grid, anything!
-* Works from any distance and any dimension (configurable).
-* Items are never voided. Anything that doesn't fit overflows to your inventory, then the ground.
+* Bind a chest, drawer, ME terminal, backpack, wireless grid, or anything else with an inventory.
+* Items are never voided. Whatever doesn't fit goes to your inventory, then the ground.
 * HUD text tells you where your loot went: *"Transferred to ..."*.
+* On Fabric, only blocks can be targets, not items.
 
 ## Mod Support
 
-Loot Transfer works with any block or item that uses a standard inventory. Anything else is shipped with dedicated support.
+Loot Transfer works with any block or item that has a standard inventory. These mods also have dedicated support on Forge and NeoForge:
 
 |Mod|Supported Targets|
 |-|-|
@@ -34,41 +30,40 @@ Loot Transfer works with any block or item that uses a standard inventory. Anyth
 |Tom's Simple Storage|Storage Terminal + Inventory Connector|
 |Simple Storage Network|Master / Request Table|
 |Pretty Pipes|Item Terminal|
-|ProjectE|EMC — Klein Stars, Transmutation Table \& Tablet|
+|ProjectE|EMC: Klein Stars, Transmutation Table and Tablet|
+|Curios|Backpacks and other inventories in Curios slots|
 
 ## Configuration
 
-* **range** — How far to search for containers (default 20).
-* **includeMinecarts** — Loot minecarts with loot tables.
-* **autoLooting** \& **autoLootingTimer** — Loot nearby containers on a timer.
-* **excludeBlockedContainers** — Skip chests that are blocked from opening.
-* **feedbackMessage** \& **playSound** — Toggle the feedback and sound.
-* **enableLootingTransfer** — Turn the transfer system on/off.
-* **maxLootTransferDistance**, **transferRequireSameDimension**, **transferRequireLoadedChunk** — Transfer configs.
+* **range**: how far to search for containers (default 20).
+* **includeMinecarts**: also loot minecarts that have loot tables.
+* **autoLooting** and **autoLootingTimer**: loot nearby containers on a timer.
+* **excludeBlockedContainers**: skip chests that can't be opened.
+* **feedbackMessage** and **playSound**: turn the on-screen message and the pickup sound on or off.
+* **enableLootingTransfer**: turn the transfer system on or off.
+* **maxLootTransferDistance**, **transferRequireSameDimension**, **transferRequireLoadedChunk**: limit how far transfers can reach.
 
 ## Item Filters
 
-Choose what gets picked up. These filters apply to everything.
+Filters apply to both looting and transfers.
 
-* **skipList** — Items to never loot. Each entry can be:
-
-  * `modid:item` — a single item (e.g. `minecraft:stick`)
-  * `#modid:tag` — an item tag (e.g. `#minecraft:stairs`)
-  * `@modid` — every item from a mod (e.g. `@alexsmobs`)
-  * **skipListMode:**
-* **BLACKLIST (default)** - loot everything except what's in skipList.
-* **WHITELIST** - loot only what's in skipList.
-* **skipArmorAndTools** — Skip all armor, tools, and weapons.
-* **skipNonStackable** — Skip all items that only stack to 1.
-* **skipUnenchantedGear** — Skip armor, tools, and weapons *unless* they're enchanted.
-* **rarityFilterMode** \& **rarityList** — Filter by rarity tier. Set the mode to `ONLY` (loot only the listed tiers) or `SKIP` (loot everything except them).
+* **skipList**: items to not loot. Each entry can be:
+  * `modid:item`, a single item (e.g. `minecraft:stick`)
+  * `#modid:tag`, an item tag (e.g. `#minecraft:stairs`)
+  * `@modid`, every item from a mod (e.g. `@alexsmobs`)
+* **skipListMode**:
+  * `BLACKLIST` (default): loot everything except what's in skipList.
+  * `WHITELIST`: loot only what's in skipList.
+* **skipArmorAndTools**: skip all armor, tools and weapons.
+* **skipNonStackable**: skip items that only stack to 1.
+* **skipUnenchantedGear**: skip armor, tools and weapons *unless* they're enchanted.
+* **rarityFilterMode** and **rarityList**: filter by rarity. Set the mode to `ONLY` to loot only the listed rarities, or `SKIP` to loot everything except them.
 
 ## Game Stages Support
 
-You can gate Loot All's abilities with the [Game Stages](https://www.curseforge.com/minecraft/mc-mods/game-stages) mod.
+On Forge, you can lock Loot All's features behind stages with the [Game Stages](https://www.curseforge.com/minecraft/mc-mods/game-stages) mod.
 
 ## Default Keybinds
 
-* `-` — Loot nearby containers.
-* `=` — Set \& clear transfer target.
-
+* `-`: loot nearby containers.
+* `=`: set or clear the transfer target.

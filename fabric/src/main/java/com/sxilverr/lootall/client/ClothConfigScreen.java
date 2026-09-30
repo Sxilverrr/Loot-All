@@ -56,9 +56,9 @@ public final class ClothConfigScreen {
         filters.addEntry(eb.startStrList(Component.literal("Skip list"), data.skipList)
                 .setDefaultValue(List.of()).setSaveConsumer(v -> data.skipList = v).build());
         filters.addEntry(eb.startEnumSelector(Component.literal("Skip list mode"), LootConfig.ListMode.class,
-                        Config.parseListMode(data.skipListMode))
+                        data.skipListMode)
                 .setDefaultValue(LootConfig.ListMode.BLACKLIST)
-                .setSaveConsumer(v -> data.skipListMode = v.name()).build());
+                .setSaveConsumer(v -> data.skipListMode = v).build());
         filters.addEntry(eb.startBooleanToggle(Component.literal("Skip armor, tools and weapons"), data.skipArmorAndTools)
                 .setDefaultValue(false).setSaveConsumer(v -> data.skipArmorAndTools = v).build());
         filters.addEntry(eb.startBooleanToggle(Component.literal("Skip non-stackable items"), data.skipNonStackable)
@@ -66,9 +66,9 @@ public final class ClothConfigScreen {
         filters.addEntry(eb.startBooleanToggle(Component.literal("Skip unenchanted gear"), data.skipUnenchantedGear)
                 .setDefaultValue(false).setSaveConsumer(v -> data.skipUnenchantedGear = v).build());
         filters.addEntry(eb.startEnumSelector(Component.literal("Rarity filter mode"), LootConfig.RarityMode.class,
-                        Config.parseRarityMode(data.rarityFilterMode))
+                        data.rarityFilterMode)
                 .setDefaultValue(LootConfig.RarityMode.OFF)
-                .setSaveConsumer(v -> data.rarityFilterMode = v.name()).build());
+                .setSaveConsumer(v -> data.rarityFilterMode = v).build());
         filters.addEntry(eb.startStrList(Component.literal("Rarity list"), data.rarityList)
                 .setDefaultValue(List.of()).setSaveConsumer(v -> data.rarityList = v).build());
 

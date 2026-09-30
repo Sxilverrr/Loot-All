@@ -3,7 +3,7 @@
 plugins {
     id("dev.architectury.loom")
     id("architectury-plugin")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 val loader = prop("loom.platform")!!
@@ -11,10 +11,11 @@ val minecraft: String = stonecutter.current.version
 val common: Project = requireNotNull(stonecutter.node.sibling("")?.project) {
     "No common project for $project"
 }
+val atFile = if (stonecutter.eval(minecraft, ">=1.17")) "modern.cfg" else "legacy.cfg"
 
-version = "$minecraft-${mod.version}-$loader"
+version = "${mod.version}-$minecraft"
 base {
-    archivesName.set(mod.id)
+    archivesName.set("${mod.id}-$loader")
 }
 architectury {
     platformSetupLoomIde()
@@ -110,7 +111,6 @@ dependencies {
 
 loom {
     forge {
-        val atFile = if (stonecutter.eval(minecraft, ">=1.17")) "modern.cfg" else "legacy.cfg"
         accessTransformer(file("../../src/main/resources/accesstransformers/$atFile"))
     }
     runConfigs.all {
@@ -147,7 +147,6 @@ tasks.shadowJar {
 }
 
 tasks.processResources {
-    val atFile = if (stonecutter.eval(minecraft, ">=1.17")) "modern.cfg" else "legacy.cfg"
     exclude("accesstransformers/**")
     from("../../src/main/resources/accesstransformers/$atFile") {
         into("META-INF")

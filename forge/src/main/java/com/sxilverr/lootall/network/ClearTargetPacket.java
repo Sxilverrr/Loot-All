@@ -1,9 +1,7 @@
 package com.sxilverr.lootall.network;
 
-import com.sxilverr.lootall.Text;
-import com.sxilverr.lootall.core.TransferData;
+import com.sxilverr.lootall.server.TransferService;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 //? if >=1.17 {
 import net.minecraftforge.network.NetworkEvent;
@@ -28,15 +26,9 @@ public class ClearTargetPacket {
         NetworkEvent.Context context = ctx.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player == null) {
-                return;
+            if (player != null) {
+                TransferService.clearTarget(player);
             }
-            MinecraftServer server = player.getServer();
-            if (server == null) {
-                return;
-            }
-            TransferData.get(server).clear(player.getUUID());
-            player.displayClientMessage(Text.translatable("message.lootall.target_cleared"), true);
         });
         context.setPacketHandled(true);
     }

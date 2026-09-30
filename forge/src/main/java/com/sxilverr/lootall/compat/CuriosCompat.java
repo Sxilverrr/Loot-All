@@ -4,7 +4,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import com.sxilverr.lootall.Compat;
+import com.sxilverr.lootall.forge.ForgePlatform;
 import net.minecraftforge.items.IItemHandler;
 
 import java.lang.reflect.Method;
@@ -51,7 +51,7 @@ public class CuriosCompat {
                 for (int i = 0; i < stacks.getSlots(); i++) {
                     ItemStack stack = stacks.getStackInSlot(i);
                     if (!stack.isEmpty() && stack.getItem() == item) {
-                        IItemHandler handler = stack.getCapability(Compat.itemHandlerCap()).resolve().orElse(null);
+                        IItemHandler handler = stack.getCapability(ForgePlatform.itemHandlerCap()).resolve().orElse(null);
                         if (handler != null) {
                             return handler;
                         }

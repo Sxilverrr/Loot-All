@@ -1,16 +1,12 @@
 package com.sxilverr.lootall.network;
 
 import com.sxilverr.lootall.Config;
-import com.sxilverr.lootall.core.TransferData;
 import com.sxilverr.lootall.server.TransferService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -26,20 +22,8 @@ public record SetBlockTargetPacket(BlockPos pos) implements CustomPacketPayload 
     }
 
     public static void handle(SetBlockTargetPacket msg, IPayloadContext ctx) {
-        if (!(ctx.player() instanceof ServerPlayer player)) {
-            return;
+        if (ctx.player() instanceof ServerPlayer player) {
+            TransferService.setBlockTarget(player, msg.pos);
         }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
-        if (!TransferService.canTargetBlock((ServerLevel) player.level(), msg.pos)) {
-            player.displayClientMessage(Component.translatable("message.lootall.target_invalid"), true);
-            return;
-        }
-        TransferData.get(server).setBlockTarget(player.getUUID(), player.level().dimension(), msg.pos);
-        Component name = player.level().getBlockState(msg.pos).getBlock().getName();
-        player.displayClientMessage(Component.translatable(
-                "message.lootall.target_set", name, msg.pos.getX(), msg.pos.getY(), msg.pos.getZ()), true);
     }
 }

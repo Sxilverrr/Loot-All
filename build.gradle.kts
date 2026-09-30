@@ -5,7 +5,7 @@ plugins {
 
 val minecraft = stonecutter.current.version
 
-version = "${mod.version}+$minecraft"
+version = "${mod.version}-$minecraft"
 base {
     archivesName.set("${mod.id}-common")
 }

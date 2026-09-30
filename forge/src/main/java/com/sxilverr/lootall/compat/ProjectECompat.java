@@ -10,6 +10,7 @@ import moze_intel.projecte.api.capabilities.block_entity.IEmcStorage;
 /*import moze_intel.projecte.api.capabilities.tile.IEmcStorage;*/
 //?}
 import moze_intel.projecte.api.capabilities.item.IItemEmcHolder;
+import moze_intel.projecte.api.proxy.IEMCProxy;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -21,8 +22,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.math.BigInteger;
 
 public class ProjectECompat {
-    private static final ResourceLocation TRANSMUTATION_TABLE = new ResourceLocation("projecte", "transmutation_table");
-    private static final ResourceLocation TRANSMUTATION_TABLET = new ResourceLocation("projecte", "transmutation_tablet");
+    private static final ResourceLocation TRANSMUTATION_TABLE = ResourceLocation.tryParse("projecte:transmutation_table");
+    private static final ResourceLocation TRANSMUTATION_TABLET = ResourceLocation.tryParse("projecte:transmutation_tablet");
+
+    //? if >=1.20.1 {
+    private static final IEMCProxy EMC = IEMCProxy.INSTANCE;
+    //?} else {
+    /*private static final IEMCProxy EMC = ProjectEAPI.getEMCProxy();*/
+    //?}
 
     //? if >=1.18 {
     private static final Capability<IItemEmcHolder> EMC_HOLDER_CAP = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY;
@@ -51,7 +58,7 @@ public class ProjectECompat {
             return null;
         }
         return stack -> {
-            long emcPerItem = ProjectEAPI.getEMCProxy().getValue(stack);
+            long emcPerItem = EMC.getValue(stack);
             if (emcPerItem <= 0) {
                 return stack;
             }
@@ -78,7 +85,7 @@ public class ProjectECompat {
             return null;
         }
         return stack -> {
-            long emcPerItem = ProjectEAPI.getEMCProxy().getValue(stack);
+            long emcPerItem = EMC.getValue(stack);
             if (emcPerItem <= 0) {
                 return stack;
             }

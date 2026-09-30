@@ -19,13 +19,15 @@ public class ClientSetup {
     //? if >=1.19 {
     @SubscribeEvent
     public static void registerOverlays(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "loot_transfer_feedback", TransferFeedback.OVERLAY);
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "loot_transfer_feedback",
+                (gui, graphics, partialTick, width, height) -> TransferFeedback.render(graphics, width, height));
     }
     //?} else if >=1.17 {
     /*@SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> OverlayRegistry.registerOverlayAbove(
-                ForgeIngameGui.HOTBAR_ELEMENT, "loot_transfer_feedback", TransferFeedback.OVERLAY));
+                ForgeIngameGui.HOTBAR_ELEMENT, "loot_transfer_feedback",
+                (gui, poseStack, partialTick, width, height) -> TransferFeedback.render(poseStack, width, height)));
     }
     *///?}
 }

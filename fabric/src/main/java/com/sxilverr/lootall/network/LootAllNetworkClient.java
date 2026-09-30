@@ -3,7 +3,6 @@ package com.sxilverr.lootall.network;
 import com.sxilverr.lootall.client.TransferFeedback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 //? if <1.21.1 {
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.network.FriendlyByteBuf;
@@ -32,10 +31,6 @@ public final class LootAllNetworkClient {
     public static void sendClearTarget() {
         ClientPlayNetworking.send(new LootAllNetwork.ClearPayload());
     }
-
-    public static void sendSetItemTarget(ResourceLocation item) {
-        ClientPlayNetworking.send(new LootAllNetwork.SetItemPayload(item));
-    }
     *///?} else {
     public static void registerClient() {
         ClientPlayNetworking.registerGlobalReceiver(LootAllNetwork.LOOT_FEEDBACK, (client, handler, buf, responseSender) -> {
@@ -57,12 +52,6 @@ public final class LootAllNetworkClient {
 
     public static void sendClearTarget() {
         ClientPlayNetworking.send(LootAllNetwork.CLEAR_TARGET, PacketByteBufs.create());
-    }
-
-    public static void sendSetItemTarget(ResourceLocation item) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeResourceLocation(item);
-        ClientPlayNetworking.send(LootAllNetwork.SET_ITEM_TARGET, buf);
     }
     //?}
 }

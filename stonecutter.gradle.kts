@@ -2,7 +2,7 @@ plugins {
     id("dev.kikugie.stonecutter")
     id("dev.architectury.loom") version "1.9.436" apply false
     id("architectury-plugin") version "3.4.164" apply false
-    id("com.github.johnrengelman.shadow") version "8.1.1" apply false
+    id("com.gradleup.shadow") version "8.3.5" apply false
 }
 stonecutter active "1.20.1" /* [SC] DO NOT EDIT */
 

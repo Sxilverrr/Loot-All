@@ -5,9 +5,6 @@
   "mixins": [
     "RandomizableContainerAccessor"
   ],
-  "client": [
-    "AbstractContainerScreenAccessor"
-  ],
   "injectors": {
     "defaultRequire": 1
   }

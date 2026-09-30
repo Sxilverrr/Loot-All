@@ -1,19 +1,13 @@
 package com.sxilverr.lootall.network;
 
 import com.sxilverr.lootall.Config;
-import com.sxilverr.lootall.core.TransferData;
 import com.sxilverr.lootall.server.LootAllHandler;
 import com.sxilverr.lootall.server.TransferService;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 
 import java.util.Optional;
 //? if >=1.21.1 {
@@ -32,7 +26,6 @@ public final class LootAllNetwork {
     public static final ResourceLocation LOOT_ALL = rl("loot_all");
     public static final ResourceLocation SET_BLOCK_TARGET = rl("set_block_target");
     public static final ResourceLocation CLEAR_TARGET = rl("clear_target");
-    public static final ResourceLocation SET_ITEM_TARGET = rl("set_item_target");
     public static final ResourceLocation LOOT_FEEDBACK = rl("loot_feedback");
 
     private LootAllNetwork() {
@@ -46,76 +39,19 @@ public final class LootAllNetwork {
         //?}
     }
 
-    private static void handleLootAll(ServerPlayer player) {
-        if (player != null) {
-            LootAllHandler.lootAll(player);
-        }
-    }
-
-    private static void handleSetBlock(ServerPlayer player, BlockPos pos) {
-        if (player == null) {
-            return;
-        }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
-        if (!TransferService.canTargetBlock((ServerLevel) player.level(), pos)) {
-            player.displayClientMessage(Component.translatable("message.lootall.target_invalid"), true);
-            return;
-        }
-        TransferData.get(server).setBlockTarget(player.getUUID(), player.level().dimension(), pos);
-        Component name = player.level().getBlockState(pos).getBlock().getName();
-        player.displayClientMessage(Component.translatable(
-                "message.lootall.target_set", name, pos.getX(), pos.getY(), pos.getZ()), true);
-    }
-
-    private static void handleClear(ServerPlayer player) {
-        if (player == null) {
-            return;
-        }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
-        TransferData.get(server).clear(player.getUUID());
-        player.displayClientMessage(Component.translatable("message.lootall.target_cleared"), true);
-    }
-
-    private static void handleSetItem(ServerPlayer player, ResourceLocation itemId) {
-        if (player == null) {
-            return;
-        }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
-        Item item = BuiltInRegistries.ITEM.get(itemId);
-        if (!TransferService.canTargetItem(player, item)) {
-            player.displayClientMessage(Component.translatable("message.lootall.item_target_invalid"), true);
-            return;
-        }
-        TransferData.get(server).setItemTarget(player.getUUID(), itemId);
-        Component name = new ItemStack(item).getHoverName();
-        player.displayClientMessage(Component.translatable("message.lootall.target_set_item", name), true);
-    }
-
     //? if >=1.21.1 {
     /*public static void registerServer() {
         PayloadTypeRegistry.playC2S().register(LootAllPayload.TYPE, LootAllPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SetBlockPayload.TYPE, SetBlockPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ClearPayload.TYPE, ClearPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(SetItemPayload.TYPE, SetItemPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(LootFeedbackPayload.TYPE, LootFeedbackPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(LootAllPayload.TYPE, (payload, context) ->
-                handleLootAll(context.player()));
+                LootAllHandler.lootAll(context.player()));
         ServerPlayNetworking.registerGlobalReceiver(SetBlockPayload.TYPE, (payload, context) ->
-                handleSetBlock(context.player(), payload.pos()));
+                TransferService.setBlockTarget(context.player(), payload.pos()));
         ServerPlayNetworking.registerGlobalReceiver(ClearPayload.TYPE, (payload, context) ->
-                handleClear(context.player()));
-        ServerPlayNetworking.registerGlobalReceiver(SetItemPayload.TYPE, (payload, context) ->
-                handleSetItem(context.player(), payload.item()));
+                TransferService.clearTarget(context.player()));
     }
 
     public static void sendFeedback(ServerPlayer player, Component message, Optional<Component> transfer) {
@@ -155,17 +91,6 @@ public final class LootAllNetwork {
         }
     }
 
-    public record SetItemPayload(ResourceLocation item) implements CustomPacketPayload {
-        public static final Type<SetItemPayload> TYPE = new Type<>(SET_ITEM_TARGET);
-        public static final StreamCodec<RegistryFriendlyByteBuf, SetItemPayload> CODEC =
-                StreamCodec.composite(ResourceLocation.STREAM_CODEC, SetItemPayload::item, SetItemPayload::new);
-
-        @Override
-        public Type<SetItemPayload> type() {
-            return TYPE;
-        }
-    }
-
     public record LootFeedbackPayload(Component message, Optional<Component> transfer) implements CustomPacketPayload {
         public static final Type<LootFeedbackPayload> TYPE = new Type<>(LOOT_FEEDBACK);
         public static final StreamCodec<RegistryFriendlyByteBuf, LootFeedbackPayload> CODEC = StreamCodec.composite(
@@ -181,17 +106,13 @@ public final class LootAllNetwork {
     *///?} else {
     public static void registerServer() {
         ServerPlayNetworking.registerGlobalReceiver(LOOT_ALL, (server, player, handler, buf, responseSender) ->
-                server.execute(() -> handleLootAll(player)));
+                server.execute(() -> LootAllHandler.lootAll(player)));
         ServerPlayNetworking.registerGlobalReceiver(SET_BLOCK_TARGET, (server, player, handler, buf, responseSender) -> {
             BlockPos pos = buf.readBlockPos();
-            server.execute(() -> handleSetBlock(player, pos));
+            server.execute(() -> TransferService.setBlockTarget(player, pos));
         });
         ServerPlayNetworking.registerGlobalReceiver(CLEAR_TARGET, (server, player, handler, buf, responseSender) ->
-                server.execute(() -> handleClear(player)));
-        ServerPlayNetworking.registerGlobalReceiver(SET_ITEM_TARGET, (server, player, handler, buf, responseSender) -> {
-            ResourceLocation item = buf.readResourceLocation();
-            server.execute(() -> handleSetItem(player, item));
-        });
+                server.execute(() -> TransferService.clearTarget(player)));
     }
 
     public static void sendFeedback(ServerPlayer player, Component message, Optional<Component> transfer) {

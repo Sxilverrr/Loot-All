@@ -1,13 +1,11 @@
 package com.sxilverr.lootall.network;
 
 import com.sxilverr.lootall.Config;
-import com.sxilverr.lootall.core.TransferData;
+import com.sxilverr.lootall.server.TransferService;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -23,14 +21,8 @@ public record ClearTargetPacket() implements CustomPacketPayload {
     }
 
     public static void handle(ClearTargetPacket msg, IPayloadContext ctx) {
-        if (!(ctx.player() instanceof ServerPlayer player)) {
-            return;
+        if (ctx.player() instanceof ServerPlayer player) {
+            TransferService.clearTarget(player);
         }
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
-        TransferData.get(server).clear(player.getUUID());
-        player.displayClientMessage(Component.translatable("message.lootall.target_cleared"), true);
     }
 }

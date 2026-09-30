@@ -19,7 +19,7 @@ public class LootAllNetwork {
     private static final String PROTOCOL = "1";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(Config.MOD_ID, "main"),
+            ResourceLocation.tryParse(Config.MOD_ID + ":main"),
             () -> PROTOCOL,
             PROTOCOL::equals,
             PROTOCOL::equals);
