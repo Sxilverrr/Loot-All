@@ -1,6 +1,7 @@
 # Loot All
 
-<img width="768" height="456" alt="Loot All Banner" src="https://github.com/user-attachments/assets/75fb9464-ed5a-4dd9-8ec0-dffa9be2454f" />
+<img width="768" height="456" alt="Loot All Banner" src="https://github.com/user-attachments/assets/5ef19437-252f-48d5-98ae-ac4b3ff0e157" />
+
 
 Press `-` and every loot container around you is emptied into your inventory, or into your storage system if you've set a transfer target.
 
